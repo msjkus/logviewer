@@ -73,7 +73,6 @@ public class LogViewer extends HttpServlet {
 		if (header == null) {
 			resp.setHeader("WWW-Authenticate", "Basic realm=\"Logviewer\"");
 			resp.setStatus(401);
-			proceed = false;
 		} else {
 			header = header.replace("Basic ", "");
 			if (header.equals(credentials)) {
@@ -98,10 +97,17 @@ public class LogViewer extends HttpServlet {
 			randomAccessFile.seek(readFrom);
 			String line = null;
 			while((line = randomAccessFile.readLine()) != null) {
+				line = escapeHtml(line);
 				body += line + "<br>";
 			}
 		}
 		printHTML(resp, "<meta http-equiv='refresh' content='" + metaRefresh + "'>", body);
+	}
+
+	private String escapeHtml(String line) {
+		return line.chars()
+				.mapToObj(ch -> ch > 127 || "\"'<>&".indexOf(ch) != -1 ? "&#" + ch + ";" : String.valueOf((char) ch))
+				.collect(Collectors.joining());
 	}
 
 	private void listLogs(HttpServletResponse resp) throws IOException {
@@ -126,17 +132,19 @@ public class LogViewer extends HttpServlet {
 					return -1;
 				return 0;
 			});
-			String filesHtml = "<table width='100%' cellpadding='2' cellspacing='0' border='1'>";
-			filesHtml += "<tr>";
-			filesHtml += "<td align='center'> <b>FILE NAME</b> </td><td align='center'> <b>LAST MODIFIED</b> </td><td align='center'> <b>SIZE</b> </td>";
-			filesHtml += "</tr>";
+			String filesHtml = "<table width='100%' cellpadding='2' cellspacing='0' border='1'>"
+					+ "<tr>"
+					+ "<td align='center'> <b>FILE NAME</b> </td><td align='center'> <b>LAST MODIFIED</b> </td><td align='center'> <b>SIZE</b> </td>"
+					+ "</tr>"
+					;
 			for (Path logFile : logFiles) {
 				BasicFileAttributes fa = Files.readAttributes(logFile, BasicFileAttributes.class);
-				filesHtml += "<tr>";
-				filesHtml += "<td><a target='_" + logFile.getFileName() + "' href='" + contextPath + SERVLET_PATH + "?bytes=" + readBytes + "&refresh=" + metaRefresh + "&file=" + logFile.getFileName() + "'>" + logFile.getFileName() + "</a></td>";
-				filesHtml += "<td>" + fa.lastModifiedTime() + "</td>";
-				filesHtml += "<td>" + fa.size() + "</td>";
-				filesHtml += "</tr>";
+				filesHtml += "<tr>"
+						+ "<td><a target='_" + logFile.getFileName() + "' href='" + contextPath + SERVLET_PATH + "?bytes=" + readBytes + "&refresh=" + metaRefresh + "&file=" + logFile.getFileName() + "'>" + logFile.getFileName() + "</a></td>"
+						+ "<td>" + fa.lastModifiedTime() + "</td>"
+						+ "<td>" + fa.size() + "</td>"
+						+ "</tr>"
+						;
 			}
 			filesHtml += "</table>";
 			
