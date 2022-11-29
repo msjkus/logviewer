@@ -92,6 +92,7 @@ public class LogViewer extends HttpServlet {
 		}
 		BasicFileAttributes fa = Files.readAttributes(file, BasicFileAttributes.class);
 		long readFrom = fa.size() - readBytes;
+		if (readFrom < 0) readFrom = 0;
 		String body = "<b>" + fileName + "</b><br>";
 		try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
 			randomAccessFile.seek(readFrom);
